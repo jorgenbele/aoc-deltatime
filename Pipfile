@@ -6,8 +6,8 @@ name = "pypi"
 [packages]
 docopt = "*"
 requests = "*"
-humanize = "*"
 rich = "*"
+types-requests = "*"
 
 [dev-packages]
 

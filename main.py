@@ -1,7 +1,8 @@
 """
-Usage: aoc-dt [--update] [options]
+Usage: aoc-dt [--help] [options]
 
 Options:
+  -u, --update
   -r, --ranking                     Show scores ranked by delta time
   -t, --total                       Show total scores
   -y, --year YEAR                   The year to use
@@ -19,13 +20,11 @@ from rich.console import Console
 from rich.table import Table
 from typing import Any, Dict, List, Optional
 
-import humanize
 import json
 import os
 import requests
 import sys
 import time
-import re
 
 
 @dataclass
@@ -86,7 +85,7 @@ def parse_data(d: Dict[Any, Any]) -> AOCData:
     last_day = 1
 
     members = {}
-    days_dt: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(lambda: {}))
+    days_dt: Dict[str, Dict[str, int]] = {}
     for member_id, member_data in d["members"].items():
         member = Member(
             id=member_id,
@@ -113,6 +112,8 @@ def parse_data(d: Dict[Any, Any]) -> AOCData:
                 "first_complete": day_data["1"]["get_star_ts"],
                 "second_complete": day_data.get("2", {"get_star_ts": 0}),
             }
+            if not day in days_dt:
+                days_dt[day] = {}
             days_dt[day][member_id] = delta_time
 
         if count == 0:
@@ -142,7 +143,7 @@ def update_if_possible(flags: Flags):
         cookies={"session": flags.cookie},
     )
     if not r.ok:
-        rprint(f"[bold red]{r}")  # TODO: warning
+        rprint(f"[bold red]{r}")
         return False
 
     data = r.json()
@@ -174,9 +175,7 @@ def format_dt(dt: int):
 def display_ranking(data: AOCData):
     last_day = max(map(lambda x: int(x), data.days_dt.keys()))
     header = ["Name", "Delta time", "Points"]
-    regex = re.compile("(second[s]|minute[s]|hour[s])")
     for day in range(1, last_day + 1):
-        rprint(f"[bold] Day {day}")  # TODO: bold
         rows = [
             [
                 data.members[member_id].name,
@@ -186,6 +185,7 @@ def display_ranking(data: AOCData):
             for rank, (member_id, dt) in enumerate(data.ranked_days_dt(str(day)))
             if len(data.members) - rank > 0
         ]
+        rprint(f"[bold] Day {day}")
         display_table(header, rows, justify_right=[2])
 
 
@@ -202,6 +202,7 @@ def display_total(data: AOCData):
         [data.members[member_id].name, str(points)]
         for member_id, points in id_points_ordered
     ]
+    rprint(f"[bold] Total")
     display_table(header, rows)
 
 
